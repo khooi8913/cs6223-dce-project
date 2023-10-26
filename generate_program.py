@@ -7,9 +7,10 @@ from pprint import pprint
 
 P4C_PATH = os.environ['P4C_PATH'] 
 P4C_BUILD_PATH = os.path.join(P4C_PATH, "build")
+P4TEST_PATH = os.path.join(P4C_BUILD_PATH, "p4test")
 BLUDGEON_PATH = os.path.join(P4C_BUILD_PATH, "p4bludgeon")
 
-assert os.path.exists(BLUDGEON_PATH)
+assert os.path.exists(P4TEST_PATH) and os.path.exists(BLUDGEON_PATH)
 
 def get_num_tokens(p4_code: str) -> int:
     """Returns the number of tokens in a text string."""
@@ -18,24 +19,33 @@ def get_num_tokens(p4_code: str) -> int:
     return num_tokens
 
 def get_desired_constructs(p4_code: str):
-    desired_constructs = ["if", "else", "switch"]
-    return any(cst in p4_code for cst in desired_constructs)
+    desired_constructs = ["if", "else"]
+    # desired_constructs = ["if", "else", "switch"]
+    return any(cst in p4_code for cst in desired_constructs) and not "switch" in p4_code
 
-def execute_command(arch, output_path):
+def compilation_check(output_path):
+    command = " ".join([P4TEST_PATH, output_path])
+    ret_val, output = subprocess.getstatusoutput(command)
+    return True if ret_val == 0 else False
+
+def execute_bludgeon_command(arch, output_path):
     command = " ".join([BLUDGEON_PATH, "--output", output_path, "--arch", arch])
-    try:
-        output = subprocess.check_output(command, shell=True)
-    except subprocess.CalledProcessError:
-        output = "mismatch"
-    return output
+    # try:
+    #     output = subprocess.check_output(command, shell=True)
+    # except subprocess.CalledProcessError:
+    #     output = "mismatch"
+    # return output
+    ret_val, output = subprocess.getstatusoutput(command)
+    return output if ret_val == 0 else ""
+
 
 def generate_p4_program(arch, output_path):
     """Returns a generated P4 program given a specific architecture."""
-    output = execute_command(arch, output_path)
+    output = execute_bludgeon_command(arch, output_path)
     # [--Wwarn=mismatch] warning: 3w8: value does not fit in 3 bits
     # Could not find writable bit lval for assignment!
     while 'mismatch' in str(output) or 'lval' in str(output):
-        output = execute_command(arch, output_path)
+        output = execute_bludgeon_command(arch, output_path)
     
     p4_code = ""
     with open(output_path) as f:
@@ -80,14 +90,23 @@ def main():
     assert os.path.exists(output_path)
 
     for i in range(num_programs):
-        curr_output_path = os.path.join(output_path, "program_{:03d}".format(i))
+        curr_output_path = os.path.join(output_path, "program_{:03d}.p4".format(i))
+
         p4_code = generate_p4_program(arch=arch, output_path=curr_output_path)
         num_tokens = get_num_tokens(p4_code=p4_code)
         has_desired_construct = get_desired_constructs(p4_code)
-        while num_tokens >= max_tokens and not has_desired_construct:
+        is_can_compile = compilation_check(curr_output_path)
+        print(num_tokens, has_desired_construct, is_can_compile)
+        # while (num_tokens >= max_tokens and (not has_desired_construct) and (not is_can_compile)):
+        while True:
+            if num_tokens < max_tokens and has_desired_construct and is_can_compile:
+                break
             p4_code = generate_p4_program(arch=arch, output_path=curr_output_path)
             num_tokens = get_num_tokens(p4_code=p4_code)
             has_desired_construct = get_desired_constructs(p4_code)
+            is_can_compile = compilation_check(curr_output_path)
+            print(num_tokens, has_desired_construct, is_can_compile)
+        print("Generated program #" + str(i))
         
 if __name__ == '__main__':
     main()
