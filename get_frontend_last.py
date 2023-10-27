@@ -16,16 +16,6 @@ docker_p4c_versions = ["stable", "1.2.4.3", "1.2.4.4"]
 
 assert os.path.exists(P4TEST_PATH) and os.path.exists(P4C_BM2_PATH)
 
-def compilation_check(arch, output_path):
-    if arch == 'top':
-        command = " ".join([P4TEST_PATH, output_path])
-    if arch == 'v1model':
-        command = " ".join([P4C_BM2_PATH, output_path])
-    ret_val, output = subprocess.getstatusoutput(command)
-    if ret_val != 0:
-        print(output)
-    return True if ret_val == 0 else False
-
 def execute_docker_p4c_commands(arch, p4c_version, target_path, output_path):
     if arch == "top":
         command = " ".join(["docker run -it -v $(pwd):/p4c p4lang/p4c:"+ p4c_version, "p4test --dump", output_path, "--top4 FrontEndLast", target_path])
