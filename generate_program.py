@@ -23,6 +23,9 @@ def compilation_check(arch, output_path):
         command = " ".join([P4TEST_PATH, output_path])
     if arch == 'v1model':
         command = " ".join([P4C_BM2_PATH, output_path])
+    if arch == "tna":
+        print("Support for TNA not implemented for now.")
+        exit(1)
     ret_val, output = subprocess.getstatusoutput(command)
     if ret_val != 0:
         print(output)
