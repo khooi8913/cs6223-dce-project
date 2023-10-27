@@ -1,4 +1,8 @@
+*/__pycache__/*
 venv/
 output/
+generated/
+instrumented/
+legacy/
 out.json
 .env
