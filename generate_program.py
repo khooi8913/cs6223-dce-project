@@ -18,7 +18,7 @@ def get_desired_constructs(p4_code: str):
     undesired_constructs = ["switch"]
     return any(cst in p4_code for cst in desired_constructs) and not any(cst in p4_code for cst in undesired_constructs)
 
-def compilation_check(arch, output_path):
+def compilation_check(arch, output_path, compiler_bug_path):
     if arch == 'top':
         command = " ".join([P4TEST_PATH, output_path])
     if arch == 'v1model':
@@ -27,8 +27,12 @@ def compilation_check(arch, output_path):
         print("Support for TNA not implemented for now.")
         exit(1)
     ret_val, output = subprocess.getstatusoutput(command)
-    if ret_val != 0:
+    if ret_val != 1:
         print(output)
+        if 'Compiler bug' in output:
+            curr_compiler_bug_path = os.path.join(compiler_bug_path, os.path.basename(output_path))
+            os.rename(output_path, curr_compiler_bug_path)
+            print("Compiler bug! Logging to", curr_compiler_bug_path)
     return True if ret_val == 0 else False
 
 def execute_bludgeon_command(arch, output_path):
@@ -70,8 +74,18 @@ def main():
     )
 
     parser.add_argument(
+        '--compiler-bug-path', default='./compiler_bug/',
+        help='output path for the generated p4 programs'
+    )
+
+    parser.add_argument(
         '--num-programs', type=int, default=100,
         help='number of p4 programs to generate'
+    )
+
+    parser.add_argument(
+        '--resume', default=True, action='store_true',
+        help='resume'
     )
 
     args = parser.parse_args()
@@ -79,36 +93,51 @@ def main():
     
     output_path = args.output_path
     instrumented_path = args.instrumented_path
+    compiler_bug_path = args.compiler_bug_path
     arch = args.arch
+    resume = args.resume
     num_programs = args.num_programs 
 
     output_path = os.path.join(output_path, arch)
     instrumented_path = os.path.join(instrumented_path, arch)
+    compiler_bug_path = os.path.join(compiler_bug_path, arch)
     
     if not os.path.exists(output_path):
         os.makedirs(output_path, exist_ok=True)
     if not os.path.exists(instrumented_path):
         os.makedirs(instrumented_path, exist_ok=True)
+    if not os.path.exists(compiler_bug_path):
+        os.makedirs(compiler_bug_path, exist_ok=True)
 
-    assert os.path.exists(output_path)
+    offset = 0
+    if resume:
+        list_of_p4_programs = sorted(os.listdir(output_path))
+        if list_of_p4_programs:
+            last_program = list_of_p4_programs[-1]
+            print(last_program)
+            last_program_idx = int(last_program.split(".")[0].split("_")[1])
+            offset = last_program_idx + 1
+    print(offset)
 
     for i in range(num_programs):
+        i = offset + i
         print("====================")
         print("Generating program #" + str(i))
-        curr_output_path = os.path.join(output_path, "program_{:03d}.p4".format(i))
+        program_name = "program_{:05d}.p4".format(i)
+        curr_output_path = os.path.join(output_path, program_name)
         p4_code = generate_p4_program(arch=arch, output_path=curr_output_path)
         has_desired_construct = get_desired_constructs(p4_code)
-        is_can_compile = compilation_check(arch, curr_output_path)
+        is_can_compile = compilation_check(arch, curr_output_path, compiler_bug_path)
         while True:
             if has_desired_construct and is_can_compile:
                 break
             p4_code = generate_p4_program(arch=arch, output_path=curr_output_path)
             has_desired_construct = get_desired_constructs(p4_code)
-            is_can_compile = compilation_check(arch, curr_output_path)
+            is_can_compile = compilation_check(arch, curr_output_path, compiler_bug_path)
         print("Program generated", curr_output_path)
         
         print("Instrumenting markers...")
-        curr_instr_path = os.path.join(instrumented_path, "program_{:03d}.p4".format(i))
+        curr_instr_path = os.path.join(instrumented_path, program_name)
         p4_code_with_markers = instrument_markers(p4_code)
         with open(curr_instr_path, 'w') as f:
             f.write(p4_code_with_markers)
