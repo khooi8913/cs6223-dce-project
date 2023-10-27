@@ -38,8 +38,7 @@ def compilation_check(arch, output_path, compiler_bug_path):
 def execute_bludgeon_command(arch, output_path):
     command = " ".join([BLUDGEON_PATH, "--output", output_path, "--arch", arch])
     ret_val, output = subprocess.getstatusoutput(command)
-    return output if ret_val == 0 else ""
-
+    return output if ret_val == 0 else "mismatch"
 
 def generate_p4_program(arch, output_path):
     """Returns a generated P4 program given a specific architecture."""
