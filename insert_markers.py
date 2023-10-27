@@ -1,94 +1,45 @@
-import os
-import argparse
-import openai
-from pprint import pprint
-from dotenv import load_dotenv
+import re
 
-load_dotenv()
+def insert_pre_marker(p4_code):
+    # Function to insert a marker after the open brace
+    def insert_marker(match):
+        return match.group(1) + " { \n            // MARKER"
+    # Regular expressions to match action blocks and if-else statements in P4
+    action_pattern = r'(action\s+\w+\s*\([^)]*\))\s*{'
+    # if_else_pattern = r'(if\s*\([^)]*\)|else)\s*{'
+    if_else_pattern = r'(if\s*\(.*?\)|else)\s*{'
+    # Insert markers for action blocks
+    p4_code_with_markers = re.sub(action_pattern, insert_marker, p4_code)
+    # Insert markers for if-else statements
+    p4_code_with_markers = re.sub(if_else_pattern, insert_marker, p4_code_with_markers)
+    return p4_code_with_markers
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+def replace_pre_marker(p4_code_with_marker):
+    # regex = re.compile('// MARKER')
+    counter = 0
+    while "// MARKER" in p4_code_with_marker:
+        text_to_replace = 'marker_dce{:02d}();'.format(counter)
+        counter = counter + 1
+        p4_code_with_marker = p4_code_with_marker.replace("// MARKER", text_to_replace, 1)
+    return counter, p4_code_with_marker
 
-system_prompt = """
-You are a P4 code assistant that helps to insert "// MARKER" into P4 code.
-You will get P4 code as input, together with the instructions.
-Finally, return modified P4 code as output.
-"""
-# Look for action blocks that looks like this: action YYYY(...)\{\}, where YYY are the action names, and insert the code "MARKER" in it.
-# Also, insert the "MARKER" into all if-else statements.
-# For the output, return the code after adding the "MARKER"s.
+def declare_marker_as_extern(num_markers, p4_code_with_marker):
+    extern_str = ["extern void marker_dce{:02d}();".format(i) for i in range(num_markers)]
+    extern_str = "\n".join(extern_str)
+    include_str = "#include <core.p4>"
+    index_to_insert = p4_code_with_marker.rindex("#include <core.p4>")
+    index_to_insert = index_to_insert + len(include_str)
+    p4_code_with_marker = p4_code_with_marker[:index_to_insert] + "\n" + extern_str + "\n" + p4_code_with_marker[index_to_insert+1:]
+    # print(p4_code_with_marker)
+    return p4_code_with_marker
 
-# You are tasked to add markers in the form of  "dce##();" into the following P4 code, where ## can range from 00 to 99. 
-# Add the markers into all if-else statements, switch cases, action blocks, and apply blocks within the "control ingress" block.
-# Do not insert dce##(); in the actions list (actions = { ... }) of a table.
-# Only give the modified code of the control ingress block as output.
-# Only give the code as output.
+def instrument_markers(p4_code):
+    p4_code_with_marker = insert_pre_marker(p4_code)
+    num_markers, p4_code_with_marker = replace_pre_marker(p4_code_with_marker)
+    p4_code_with_marker = declare_marker_as_extern(num_markers, p4_code_with_marker)
+    return p4_code_with_marker
 
-p4_code = ""
-with open('output/program_000.p4') as f:
-    p4_code = f.read()
-
-instruction = """
-INSTRUCTIONS:
-First, insert "// MARKER" into all if-else statements. 
-Then, find all action blocks that are in the form of "action YYYY(ZZZ)\{\}" where YYY are the action names and ZZZ are action parameters, insert "// MARKER" too.
-Make sure not to insert "// MARKER" in any table scope.
-CODE:
-"""
-
-response = openai.ChatCompletion.create(
-  model="gpt-3.5-turbo",
-#   model="gpt-3.5-turbo-16k",
-  messages=[
-    {
-      "role": "system",
-      "content": system_prompt
-    },
-    {
-      "role": "user",
-      "content": instruction + p4_code
-    }
-  ],
-  temperature=0,
-  max_tokens=2048,
-  top_p=1,
-  frequency_penalty=0,
-  presence_penalty=0
-)
-
-print(response)
-with open('marked/program_000.p4', 'w') as f:
-    f.write(response.choices[0].message.content)
-
-# def main():
-#     parser = argparse.ArgumentParser()
-
-#     parser.add_argument(
-#         '--output-path', required=True, default='./output/',
-#         help='output path for the generated p4 programs'
-#     )
-
-#     parser.add_argument(
-#         '--max-tokens', type=int, default=1800,
-#         help='maximum number of tokens in a p4 program'
-#     )
-
-#     parser.add_argument(
-#         '--num-programs', type=int, default=100,
-#         help='number of p4 programs to generate'
-#     )
-
-#     args = parser.parse_args()
-#     pprint(args)
-    
-#     output_path = args.output_path
-#     arch = args.arch
-#     max_tokens = args.max_tokens
-#     num_programs = args.num_programs 
-
-#     if not os.path.exists(output_path):
-#         os.mkdir(output_path)
-
-#     assert os.path.exists(output_path)
-        
-# if __name__ == '__main__':
-#     main()
+# p4_code = ""
+# with open('generated/top/program_061.p4') as f:
+#     p4_code = f.read()
+# print(instrument_markers(p4_code))
