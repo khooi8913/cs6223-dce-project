@@ -27,9 +27,9 @@ def compilation_check(arch, output_path, compiler_bug_path):
         print("Support for TNA not implemented for now.")
         exit(1)
     ret_val, output = subprocess.getstatusoutput(command)
-    if ret_val != 1:
+    if ret_val != 0:
         print(output)
-        if 'Compiler bug' in output:
+        if 'bug' in output:
             curr_compiler_bug_path = os.path.join(compiler_bug_path, os.path.basename(output_path))
             os.rename(output_path, curr_compiler_bug_path)
             print("Compiler bug! Logging to", curr_compiler_bug_path)
