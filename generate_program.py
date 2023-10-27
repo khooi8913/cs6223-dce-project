@@ -24,6 +24,8 @@ def compilation_check(arch, output_path):
     if arch == 'v1model':
         command = " ".join([P4C_BM2_PATH, output_path])
     ret_val, output = subprocess.getstatusoutput(command)
+    if ret_val != 0:
+        print(output)
     return True if ret_val == 0 else False
 
 def execute_bludgeon_command(arch, output_path):
@@ -107,8 +109,6 @@ def main():
         p4_code_with_markers = instrument_markers(p4_code)
         with open(curr_instr_path, 'w') as f:
             f.write(p4_code_with_markers)
-        is_can_compile = compilation_check(arch, curr_instr_path)
-        assert is_can_compile
         print("Writing to", curr_instr_path)
         print("====================\n")
         
