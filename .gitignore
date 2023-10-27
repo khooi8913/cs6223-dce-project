@@ -5,5 +5,6 @@ generated/
 instrumented/
 legacy/
 report/
+results/
 out.json
 .env
