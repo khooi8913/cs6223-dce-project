@@ -10,7 +10,7 @@ P4TEST_PATH = os.path.join(P4C_BUILD_PATH, "p4test")
 P4C_BM2_PATH = os.path.join(P4C_BUILD_PATH, "p4c-bm2-ss")
 
 # p4lang/p4c container versions
-docker_p4c_versions = ["stable", "1.2.4.3", "1.2.4.4"]
+docker_p4c_versions = ["stable", "1.2.4.3", "1.2.4.4", "1.2.4.5"]
 
 # p4test --dump /tmp --top4 FrontEndLast program_000.p4
 
@@ -58,11 +58,14 @@ def main():
     
     for p4c_version in docker_p4c_versions:
         curr_output_path = os.path.join(output_path, p4c_version)
-        if not os.path.exists(curr_output_path):
+        if os.path.exists(curr_output_path):
+            continue
+        else:
             os.makedirs(curr_output_path, exist_ok=True)
         print("==>Current output", curr_output_path)
         list_of_programs = sorted(os.listdir(target_path))
         for prog in list_of_programs:
+            print(prog)
             curr_target_path = os.path.join(target_path, prog)
             execute_docker_p4c_commands(arch, p4c_version, curr_target_path, curr_output_path)
         
