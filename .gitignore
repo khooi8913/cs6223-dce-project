@@ -3,8 +3,10 @@ venv/
 output/
 generated/
 instrumented/
+compiler_bug/
 legacy/
 report/
-results/
+*_results/
 out.json
 .env
+*.zip
