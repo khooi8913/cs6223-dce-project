@@ -58,15 +58,18 @@ def main():
     
     for p4c_version in docker_p4c_versions:
         curr_output_path = os.path.join(output_path, p4c_version)
-        if os.path.exists(curr_output_path):
-            continue
-        else:
-            os.makedirs(curr_output_path, exist_ok=True)
+        os.makedirs(curr_output_path, exist_ok=True)
+        
         print("==>Current output", curr_output_path)
+        list_of_programs_in_curr_output_path = sorted(os.listdir(curr_output_path))
+        list_of_programs_in_curr_output_path = [ p.split("-")[0] for p in list_of_programs_in_curr_output_path ]
+
         list_of_programs = sorted(os.listdir(target_path))
         for prog in list_of_programs:
-            print(prog)
+            prog_name = prog.split(".")[0]
             curr_target_path = os.path.join(target_path, prog)
+            if prog_name in list_of_programs_in_curr_output_path:
+                continue
             execute_docker_p4c_commands(arch, p4c_version, curr_target_path, curr_output_path)
         
 if __name__ == '__main__':
