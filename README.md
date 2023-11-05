@@ -10,4 +10,5 @@ python3 get_compiler_bugs.py --arch top --target-path ./output/ --compiler-bug-p
 ```
 
 ## TODO
-Automated flow that only keeps "interesting" cases?
+1. Automated flow that only keeps "interesting" cases?
+2. Use containerized p4bludgeon and p4c for program generation
