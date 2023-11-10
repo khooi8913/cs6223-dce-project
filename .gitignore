@@ -1,11 +1,13 @@
 *__pycache__*
 venv/
 output/
+output-end/
 generated/
 instrumented/
 compiler_bug/
 legacy/
 report/
+report-end/
 *_results/
 out.json
 .env
