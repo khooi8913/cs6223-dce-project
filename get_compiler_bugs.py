@@ -5,7 +5,7 @@ import shutil
 from pprint import pprint
 
 # p4lang/p4c container versions
-docker_p4c_versions = ["stable", "1.2.4.3", "1.2.4.4", "1.2.4.5"]
+docker_p4c_versions = ["stable", "1.2.4.3", "1.2.4.4", "1.2.4.5", "1.2.3.0", "1.2.3.9"]
 
 def main():
     parser = argparse.ArgumentParser()

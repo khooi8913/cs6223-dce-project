@@ -4,7 +4,7 @@ import argparse
 from pprint import pprint
 from natsort import natsorted
 
-docker_p4c_versions = ["stable", "1.2.4.3", "1.2.4.4", "1.2.4.5"]
+docker_p4c_versions = ["stable", "1.2.4.3", "1.2.4.4", "1.2.4.5", "1.2.3.0", "1.2.3.9"]
 
 def find_markers(p4_code):
     pattern = r'marker_dce\d{2}\(\);'
