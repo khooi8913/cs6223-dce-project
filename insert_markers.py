@@ -1,4 +1,6 @@
 import re
+import os
+import sys
 
 def insert_pre_marker(p4_code):
     # Function to insert a marker after the open brace
@@ -24,7 +26,7 @@ def replace_pre_marker(p4_code_with_marker):
     return counter, p4_code_with_marker
 
 def declare_marker_as_extern(num_markers, p4_code_with_marker):
-    extern_str = ["extern void marker_dce{:02d}();".format(i) for i in range(num_markers)]
+    extern_str = ["@noSideEffects\nextern void marker_dce{:02d}();".format(i) for i in range(num_markers)]
     extern_str = "\n".join(extern_str)
     include_str = "#include <core.p4>"
     index_to_insert = p4_code_with_marker.rindex("#include <core.p4>")
@@ -39,7 +41,20 @@ def instrument_markers(p4_code):
     p4_code_with_marker = declare_marker_as_extern(num_markers, p4_code_with_marker)
     return p4_code_with_marker
 
-# p4_code = ""
-# with open('generated/top/program_061.p4') as f:
-#     p4_code = f.read()
-# print(instrument_markers(p4_code))
+if __name__ == "__main__":
+    generated_dir = "generated/top/"
+    instrumented_dir = "instrumented/top"
+    
+    os.makedirs(instrumented_dir, exist_ok=True)
+    assert os.path.exists(generated_dir) and os.path.exists(instrumented_dir)
+    
+    p4_code_files = os.listdir(generated_dir)
+    for p4 in p4_code_files:
+        current_p4_code_path = os.path.join(generated_dir, p4) 
+        output_p4_code_path = os.path.join(instrumented_dir, p4)
+        p4_code = ""
+        with open(current_p4_code_path) as f:
+            p4_code = f.read()
+        p4_code = instrument_markers(p4_code)
+        with open(output_p4_code_path, 'w') as f:
+            f.write(p4_code)
