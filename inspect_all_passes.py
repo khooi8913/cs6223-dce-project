@@ -179,6 +179,7 @@ def main():
         p4c_v1_file = get_full_filename_if_pass_exit(fp, p4c_ver_1_frontend_files)
         p4c_v2_file = get_full_filename_if_pass_exit(fp, p4c_ver_2_frontend_files)
         res = -1
+        key = "FrontEnd_" + fp
         if p4c_v1_file and p4c_v2_file:
             p4c_v1_fp_path = os.path.join(target_path, p4c_ver_1, program_name, p4c_v1_file) 
             p4c_v2_fp_path = os.path.join(target_path, p4c_ver_2, program_name, p4c_v2_file) 
@@ -200,12 +201,19 @@ def main():
             p4_prog_2_markers = find_markers(p4_prog_2)
             in_1_but_not_2 = [ x for x in p4_prog_1_markers if x not in p4_prog_2_markers ]
             res = len(in_1_but_not_2)
-        all_results["FrontEnd_" + fp] = res
+            p4c_ver_1_frontend_files.remove(p4c_v1_file)
+            p4c_ver_2_frontend_files.remove(p4c_v2_file)
+            counter = 0
+            while key in all_results.keys():
+                key = "FrontEnd_" + fp + "_" + str(counter)
+                counter += 1
+        all_results[key] = res
     
     for mp in reference_midend_passes:
         p4c_v1_file = get_full_filename_if_pass_exit(mp, p4c_ver_1_midend_files)
         p4c_v2_file = get_full_filename_if_pass_exit(mp, p4c_ver_2_midend_files)
         res = -1
+        key = "MidEnd_" + mp
         if p4c_v1_file and p4c_v2_file:
             p4c_v1_mp_path = os.path.join(target_path, p4c_ver_1, program_name, p4c_v1_file) 
             p4c_v2_mp_path = os.path.join(target_path, p4c_ver_2, program_name, p4c_v2_file) 
@@ -227,7 +235,13 @@ def main():
             p4_prog_2_markers = find_markers(p4_prog_2)
             in_1_but_not_2 = [ x for x in p4_prog_1_markers if x not in p4_prog_2_markers ]
             res = len(in_1_but_not_2)
-        all_results["MidEnd_" + mp] = res
+            p4c_ver_1_midend_files.remove(p4c_v1_file)
+            p4c_ver_2_midend_files.remove(p4c_v2_file)
+            counter = 0
+            while key in all_results.keys():
+                key = "MidEnd_" + mp + "_" + str(counter)
+                counter += 1
+        all_results[key] = res
     
     for k,v in all_results.items():
         print(k + "," + str(v))
